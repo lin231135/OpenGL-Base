@@ -91,7 +91,7 @@ class Skybox(object):
         self.vertexBuffer = array(skyboxVertices, dtype=float32)
         self.VBO = glGenBuffers(1)
 
-        # --- FIX AMD/CORE PROFILE: crear y configurar un VAO propio del skybox ---
+        # --- VAO propio del skybox ---
         self.VAO = glGenVertexArrays(1)
         glBindVertexArray(self.VAO)
 
@@ -101,7 +101,7 @@ class Skybox(object):
         glEnableVertexAttribArray(0)
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 4 * 3, ctypes.c_void_p(0))
 
-        glBindVertexArray(0)  # Desenlazar VAO para evitar side-effects
+        glBindVertexArray(0)  # OK: ahora restauraremos el VAO anterior en Render()
 
         self.shaders = compileProgram(
             compileShader(skybox_vertex_shader, GL_VERTEX_SHADER),
@@ -113,7 +113,6 @@ class Skybox(object):
 
         for i in range(len(textureList)):
             texture = pygame.image.load(textureList[i])
-            # pygame entrega superficies BGR-> usamos RGB y sin volteo
             textureData = pygame.image.tostring(texture, "RGB", False)
 
             glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
@@ -136,6 +135,9 @@ class Skybox(object):
         if self.shaders is None:
             return
 
+        # Guardar VAO actual y restaurarlo al final (para no dejar VAO=0)
+        prev_vao = glGetIntegerv(GL_VERTEX_ARRAY_BINDING)
+
         glUseProgram(self.shaders)
 
         if self.cameraRef is not None:
@@ -153,9 +155,9 @@ class Skybox(object):
         glActiveTexture(GL_TEXTURE0)
         glBindTexture(GL_TEXTURE_CUBE_MAP, self.texture)
 
-        # Enlazamos el VAO ya configurado y dibujamos
         glBindVertexArray(self.VAO)
         glDrawArrays(GL_TRIANGLES, 0, 36)
-        glBindVertexArray(0)
 
+        # Restaurar estado
+        glBindVertexArray(prev_vao)
         glDepthMask(GL_TRUE)

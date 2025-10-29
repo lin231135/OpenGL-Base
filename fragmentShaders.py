@@ -1,6 +1,6 @@
 # fragmentShaders.py
-# GLSL
 
+# GLSL
 fragment_shader = '''
 #version 330 core
 
@@ -21,9 +21,7 @@ void main()
 
     fragColor = texture(tex0, fragTexCoords) * intensity;
 }
-
 '''
-
 
 toon_shader = '''
 #version 330 core
@@ -52,9 +50,7 @@ void main()
 
     fragColor = texture(tex0, fragTexCoords) * intensity;
 }
-
 '''
-
 
 negative_shader = '''
 #version 330 core
@@ -71,9 +67,7 @@ void main()
 {
     fragColor = 1 - texture(tex0, fragTexCoords);
 }
-
 '''
-
 
 magma_shader = '''
 #version 330 core
@@ -100,9 +94,4 @@ void main()
     fragColor = texture(tex0, fragTexCoords) * intensity;
     fragColor += texture(tex1, fragTexCoords) * ((sin(time) + 1) / 2);
 }
-
 '''
-
-
-
-

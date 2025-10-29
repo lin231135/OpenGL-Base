@@ -24,7 +24,6 @@ void main()
 }
 '''
 
-
 fat_shader = '''
 #version 330 core
 
@@ -50,7 +49,6 @@ void main()
     fragTexCoords = inTexCoords;
 }
 '''
-
 
 water_shader = '''
 #version 330 core
@@ -80,8 +78,7 @@ void main()
 }
 '''
 
-
-#“Tierra Cayendo”
+# “Tierra Cayendo”
 earth_shader = '''
 #version 330 core
 
@@ -103,6 +100,7 @@ void main()
 {
     // Efecto de caída tipo tierra/arena
     float fallSpeed = value * 10.0; // velocidad ajustable
+
     float crumble = fract(sin(dot(inPosition.xz, vec2(12.9898,78.233))) * 43758.5453);
     float offset = (inPosition.y < 0.0) ? crumble * time * fallSpeed : 0.0;
 
@@ -114,6 +112,7 @@ void main()
     fragTexCoords = inTexCoords;
 }
 '''
+
 melt_shader = '''
 #version 330 core
 

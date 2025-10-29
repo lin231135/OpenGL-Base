@@ -1,4 +1,5 @@
 # gl.py
+
 import glm  # pip install PyGLM
 from OpenGL.GL import *
 from OpenGL.GL.shaders import compileProgram, compileShader
@@ -11,32 +12,29 @@ class Renderer(object):
         self.screen = screen
         _, _, self.width, self.height = screen.get_rect()
 
-        glClearColor(0.2, 0.2, 0.2, 1.0)
-        glEnable(GL_DEPTH_TEST)
         glViewport(0, 0, self.width, self.height)
+        glClearColor(0.08, 0.1, 0.12, 1.0)
+        glEnable(GL_DEPTH_TEST)
 
-        # --- FIX AMD/CORE PROFILE: Necesitamos un VAO global activo ---
+        # --- VAO global por compatibilidad con drivers AMD (core profile) ---
         self.globalVAO = glGenVertexArrays(1)
         glBindVertexArray(self.globalVAO)
 
-        # Opcional pero sano: definir cara frontal y qué cullar
-        glFrontFace(GL_CCW)
-        glCullFace(GL_BACK)
+        # Arranca en FILL y SIN culling para evitar desaparecer el modelo por winding
+        self._filled = True
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
+        glDisable(GL_CULL_FACE)
 
+        # Matrices / escena
         self.camera = Camera(self.width, self.height)
-
         self.scene = []
 
-        self.filledMode = False
-        self.ToggleFilledMode()
-
         self.activeShader = None
-
         self.skybox = None
 
+        # Luces / uniformes
         self.pointLight = glm.vec3(0, 0, 0)
-        self.ambientLight = 0.1
-
+        self.ambientLight = 0.14
         self.value = 0.0
         self.elapsedTime = 0.0
 
@@ -45,14 +43,16 @@ class Renderer(object):
         self.skybox.cameraRef = self.camera
 
     def ToggleFilledMode(self):
-        self.filledMode = not self.filledMode
-
-        if self.filledMode:
-            glEnable(GL_CULL_FACE)
-            glPolygonMode(GL_FRONT, GL_FILL)
-        else:
+        # Alterna entre FILL sin culling y WIREFRAME con culling (útil para depurar)
+        self._filled = not self._filled
+        if self._filled:
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
             glDisable(GL_CULL_FACE)
+        else:
             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+            glEnable(GL_CULL_FACE)
+            glFrontFace(GL_CCW)
+            glCullFace(GL_BACK)
 
     def SetShaders(self, vertexShader, fragmentShader):
         if vertexShader is not None and fragmentShader is not None:
@@ -66,13 +66,15 @@ class Renderer(object):
     def Render(self):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-        # Asegura que el VAO global esté enlazado antes de dibujar (por drivers estrictos)
+        # Asegura VAO global enlazado
         glBindVertexArray(self.globalVAO)
 
         self.camera.Update()
 
         if self.skybox is not None:
             self.skybox.Render()
+            # ⚠️ IMPORTANTE: re-enlazar el VAO global porque Skybox pudo cambiar el VAO actual
+            glBindVertexArray(self.globalVAO)
 
         if self.activeShader is not None:
             glUseProgram(self.activeShader)
