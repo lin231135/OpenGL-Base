@@ -1,5 +1,4 @@
 # camera.py
-
 import glm
 
 class Camera(object):

@@ -1,0 +1,31 @@
+# Material file for pacman.obj
+
+newmtl mesh0024mat
+    Ns 0
+    d 1
+    illum 2
+    Kd 1.0 1.0 1.0
+    Ks 0.0 0.0 0.0
+    Ka 0.0 0.0 0.0
+    map_Kd ../textures/pacman/t0366_0.png
+
+
+newmtl mesh0042mat
+    Ns 0
+    d 1
+    illum 2
+    Kd 1.0 1.0 1.0
+    Ks 0.0 0.0 0.0
+    Ka 0.0 0.0 0.0
+    map_Kd ../textures/pacman/t0378_0.png
+
+
+newmtl mesh0043mat
+    Ns 0
+    d 1
+    illum 2
+    Kd 1.0 1.0 1.0
+    Ks 0.0 0.0 0.0
+    Ka 0.0 0.0 0.0
+    map_Kd ../textures/pacman/t0379_0.png
+

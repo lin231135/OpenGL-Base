@@ -1,46 +1,54 @@
-# obj.py
+#obj.py
+import os
 
 class Obj(object):
-	def __init__(self, filename):
-		# Asumiendo que el archivo es un formato .obj
-		with open(filename, "r") as file:
-			lines = file.read().splitlines()
-			
-		self.vertices = []
-		self.texCoords = []
-		self.normals = []
-		self.faces = []
-		
-		for line in lines:
-			# Si la linea no cuenta con un prefijo y un valor,
-			# seguimos a la siguiente la linea
+    def __init__(self, filename):
+        with open(filename, "r") as file:
+            lines = file.read().splitlines()
 
-			line = line.rstrip()
+        self.vertices = []
+        self.texCoords = []
+        self.normals = []
+        self.faces = []  # [(face, materialName), ...]
+        self.materials = {}  # materialName -> texturePath
 
-			try:
-				prefix, value = line.split(" ", 1)
-			except:
-				continue
-			
-			# Dependiendo del prefijo, parseamos y guardamos
-			# la informacion en el contenedor correcto
-			
-			if prefix == "v": # Vertices
-				vert = list(map(float,value.split(" ")))
-				self.vertices.append(vert)
-				
-			elif prefix == "vt": # Coordenadas de textura
-				vts = list(map(float,value.split(" ")))
-				self.texCoords.append([vts[0],vts[1]])
-				
-			elif prefix == "vn": # Normales
-				norm = list(map(float,value.split(" ")))
-				self.normals.append(norm)
-				
-			elif prefix == "f": # Caras
-				face = []
-				verts = value.split(" ")
-				for vert in verts:
-					vert = list(map(int, vert.split("/")))
-					face.append(vert)
-				self.faces.append(face)                                                                                                                                                                                                                                                                                                                                                                                           
+        currentMaterial = None
+        basePath = os.path.dirname(filename)
+
+        for line in lines:
+            line = line.strip()
+            if len(line) == 0 or line.startswith("#"):
+                continue
+
+            prefix, *value = line.split()
+            if prefix == "v":
+                self.vertices.append(list(map(float, value)))
+            elif prefix == "vt":
+                self.texCoords.append(list(map(float, value[:2])))
+            elif prefix == "vn":
+                self.normals.append(list(map(float, value)))
+            elif prefix == "usemtl":
+                currentMaterial = value[0]
+            elif prefix == "f":
+                face = []
+                for vert in value:
+                    vert = list(map(int, vert.split("/")))
+                    face.append(vert)
+                self.faces.append((face, currentMaterial))
+            elif prefix == "mtllib":
+                mtlPath = os.path.join(basePath, value[0])
+                self.loadMTL(mtlPath, basePath)
+
+    def loadMTL(self, filename, basePath):
+        currentMat = None
+        with open(filename, "r") as file:
+            for line in file:
+                line = line.strip()
+                if len(line) == 0 or line.startswith("#"):
+                    continue
+                prefix, *value = line.split()
+                if prefix == "newmtl":
+                    currentMat = value[0]
+                elif prefix == "map_Kd" and currentMat:
+                    texPath = os.path.join(basePath, value[0])
+                    self.materials[currentMat] = texPath

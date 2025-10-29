@@ -1,5 +1,4 @@
 # buffer.py
-
 import glm # pip install PyGLM
 from OpenGL.GL import *
 from numpy import array, float32
