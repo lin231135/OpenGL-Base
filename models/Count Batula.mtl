@@ -7,7 +7,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.000000
 d 1.000000
 illum 2
-map_Kd Eye.png
+map_Kd ../textures/Eye.png
 
 newmtl Eyehole
 Ns 0.000000
@@ -18,8 +18,8 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.000000
 d 1.000000
 illum 2
-map_Kd Eye2.png
-map_d Eye2.png
+map_Kd ../textures/Eye2.png
+map_d ../textures/Eye2.png
 
 newmtl Face
 Ns 0.000000
@@ -30,7 +30,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.000000
 d 1.000000
 illum 2
-map_Kd Face.png
+map_Kd ../textures/Face.png
 
 newmtl Fangs
 Ns 0.000000
@@ -41,7 +41,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.000000
 d 1.000000
 illum 2
-map_Kd Fangs.png
+map_Kd ../textures/Fangs.png
 
 newmtl Hair
 Ns 0.000000
@@ -52,7 +52,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.000000
 d 1.000000
 illum 2
-map_Kd Hair.png
+map_Kd ../textures/Hair.png
 
 newmtl Hand
 Ns 0.000000
@@ -63,7 +63,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.000000
 d 1.000000
 illum 2
-map_Kd Hands.png
+map_Kd ../textures/Hands.png
 
 newmtl Head
 Ns 0.000000
@@ -74,7 +74,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.000000
 d 1.000000
 illum 2
-map_Kd Head.png
+map_Kd ../textures/Head.png
 
 newmtl Neck
 Ns 0.000000
@@ -85,7 +85,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.000000
 d 1.000000
 illum 2
-map_Kd Hands.png
+map_Kd ../textures/Hands.png
 
 newmtl Robe
 Ns 0.000000
@@ -96,7 +96,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.000000
 d 1.000000
 illum 2
-map_Kd Robe3.png
+map_Kd ../textures/Robe3.png
 
 newmtl Robe2
 Ns 0.000000
@@ -107,7 +107,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.000000
 d 1.000000
 illum 2
-map_Kd Robe.png
+map_Kd ../textures/Robe.png
 
 newmtl Robe_arm
 Ns 0.000000
@@ -118,7 +118,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.000000
 d 1.000000
 illum 2
-map_Kd Robe2.png
+map_Kd ../textures/Robe2.png
 
 newmtl Robe_bottom
 Ns 0.000000
@@ -129,4 +129,4 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.000000
 d 1.000000
 illum 2
-map_Kd Robe4.png
+map_Kd ../textures/Robe4.png

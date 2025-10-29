@@ -45,17 +45,21 @@ skyboxTextures = [
 rend.CreateSkybox(skyboxTextures)
 
 # --- Modelo principal centrado y al frente de la cámara ---
-faceModel = Model("models/model.obj")
-# tex0 (albedo/base) y tex1 (overlay para magma_shader)
-faceModel.AddTexture("textures/model.bmp")
-faceModel.AddTexture("textures/lava_cracks.jpg")
+faceModel = Model("models/Count Batula.obj")
 
-# Centrado en X,Y y a -5 en Z para que sea visible
+# Carga la(s) textura(s) del MTL automáticamente:
+faceModel.AddDiffuseFromMTL(load_all=False)  # o True si quieres todas
+
+# Texturas extra manuales (si las usas en otros shaders):
+# faceModel.AddTexture("textures/Robe2.png")
+# faceModel.AddTexture("textures/Face.png")
+
 faceModel.position = glm.vec3(0, 0, -5)
 faceModel.rotation = glm.vec3(0, 0, 0)
-faceModel.scale = glm.vec3(1, 1, 1)
+faceModel.scale    = glm.vec3(1, 1, 1)
 
 rend.scene.append(faceModel)
+
 
 # Ayuda rápida en consola
 print("""
