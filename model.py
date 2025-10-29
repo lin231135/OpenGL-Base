@@ -1,3 +1,5 @@
+# model.py
+
 from OpenGL.GL import *
 from obj import Obj
 from buffer import Buffer

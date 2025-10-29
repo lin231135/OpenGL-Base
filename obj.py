@@ -1,3 +1,4 @@
+# obj.py
 
 class Obj(object):
 	def __init__(self, filename):

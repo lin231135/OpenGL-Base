@@ -1,3 +1,4 @@
+# skybox.py
 
 from numpy import array, float32
 import glm

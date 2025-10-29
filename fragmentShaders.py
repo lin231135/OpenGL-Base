@@ -1,4 +1,4 @@
-# GLSL
+# fragmentShaders.py
 
 fragment_shader = '''
 #version 330 core

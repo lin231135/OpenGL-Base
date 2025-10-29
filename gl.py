@@ -1,3 +1,5 @@
+# gl.py
+
 import glm # pip install PyGLM
 from OpenGL.GL import *
 from OpenGL.GL.shaders import compileProgram, compileShader
