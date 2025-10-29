@@ -1,5 +1,29 @@
-# fragmentShaders.py  (no borrar este comentario con el nombre del archivo)
+# fragmentShaders.py 
 
+# Fragment Shader por defecto (textura + Lambert + ambient)
+default_fs = '''
+#version 330 core
+in vec2 fragTexCoords;
+in vec3 fragNormal;
+in vec4 fragPosition;
+
+out vec4 fragColor;
+
+uniform sampler2D tex0;
+uniform vec3 pointLight;
+uniform float ambientLight;
+
+void main() {
+    vec3 N = normalize(fragNormal);
+    vec3 L = normalize(pointLight - fragPosition.xyz);
+    float lambert = max(0.0, dot(N, L));
+
+    vec4 albedo = texture(tex0, fragTexCoords);
+    vec3 color = albedo.rgb * (lambert + ambientLight);
+
+    fragColor = vec4(color, albedo.a);
+}
+'''
 # 1) Rim-Toon (conservado) — look cartoon con halo
 rim_toon_fs = '''
 #version 330 core

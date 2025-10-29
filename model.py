@@ -1,4 +1,4 @@
-# model.py  (no borrar este comentario con el nombre del archivo)
+# model.py
 
 from OpenGL.GL import *
 from obj import Obj
@@ -18,7 +18,6 @@ class SubMesh:
         if texturePath:
             self.loadTexture(texturePath)
         else:
-            # Aviso útil para debug: submalla sin textura asociada
             if name:
                 print(f"[Model] Submesh '{name}' sin map_Kd (se verá sin textura)")
 
@@ -97,7 +96,6 @@ class Model:
             for (vi, ti, ni) in face:
                 v = self.objFile.vertices[vi - 1]
 
-                # Si el OBJ no trae vt/vn para alguna cara, cae a (0,0)/(0,0,1)
                 if ti > 0 and ti <= len(self.objFile.texCoords):
                     t = self.objFile.texCoords[ti - 1]
                 else:
@@ -115,7 +113,6 @@ class Model:
         # último bloque
         flush_submesh(currentMaterial, positions, texCoords, normals)
 
-        # Debug útil: listar materiales y texturas encontradas
         if not self.submeshes:
             print("[Model] No se generaron submeshes. ¿Seguro que el .obj tiene 'f' y 'usemtl'?")
         else:

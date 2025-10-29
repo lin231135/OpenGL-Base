@@ -1,6 +1,30 @@
-# vertexShaders.py  (no borrar este comentario con el nombre del archivo)
+# vertexShaders.py
 
-# 1) Twist — retuerce el modelo alrededor del eje Y
+# Vertex Shader por defecto (passthrough geom/UV/normal)
+default_vs = '''
+#version 330 core
+layout (location = 0) in vec3 inPosition;
+layout (location = 1) in vec2 inTexCoords;
+layout (location = 2) in vec3 inNormals;
+
+out vec2 fragTexCoords;
+out vec3 fragNormal;
+out vec4 fragPosition;
+
+uniform mat4 modelMatrix;
+uniform mat4 viewMatrix;
+uniform mat4 projectionMatrix;
+
+void main() {
+    vec4 wp = modelMatrix * vec4(inPosition, 1.0);
+    gl_Position  = projectionMatrix * viewMatrix * wp;
+    fragPosition = wp;
+    fragNormal   = normalize(mat3(modelMatrix) * inNormals);
+    fragTexCoords = inTexCoords;
+}
+'''
+
+# 1) Twist — retuerce el modelo alrededor del eje Y (fuerte por defecto)
 twist_vs = '''
 #version 330 core
 layout (location = 0) in vec3 inPosition;
@@ -18,8 +42,9 @@ uniform float time;
 uniform float value;
 
 void main() {
-    float k = mix(0.0, 2.5, clamp(value, 0.0, 1.0));
-    float ang = (inPosition.y * k) + time * 0.8 * value;
+    // Intensidad efectiva: mínimo 1.2 rad por unidad Y
+    float k = 1.2 + 2.5 * clamp(value, 0.0, 1.0);
+    float ang = (inPosition.y * k) + time * (0.6 + 0.8 * value);
     float c = cos(ang), s = sin(ang);
 
     vec3 p = vec3(
@@ -30,13 +55,13 @@ void main() {
 
     gl_Position  = projectionMatrix * viewMatrix * modelMatrix * vec4(p, 1.0);
     fragPosition = modelMatrix * vec4(p, 1.0);
-    // Aproximación: rotación solo geométrica; normal transformada por matriz del modelo
     fragNormal   = normalize(mat3(modelMatrix) * inNormals);
     fragTexCoords = inTexCoords;
 }
 '''
 
-# 2) Pulse — “respira” escalando radialmente con una onda
+
+# 2) Pulse — “respira” escalando radialmente con onda (base 8% aun con value=0)
 pulse_vs = '''
 #version 330 core
 layout (location = 0) in vec3 inPosition;
@@ -55,8 +80,9 @@ uniform float value;
 
 void main() {
     float r = length(inPosition);
-    float amp = 0.35 * clamp(value,0.0,1.0);
-    float s = 1.0 + amp * sin(time * 3.0 + r * 4.0);
+    // Amplitud efectiva: 0.08..0.45
+    float amp = 0.08 + 0.37 * clamp(value, 0.0, 1.0);
+    float s = 1.0 + amp * sin(time * (2.6 + 1.2*value) + r * (3.5 + 2.0*value));
     vec3 p = inPosition * s;
 
     gl_Position  = projectionMatrix * viewMatrix * modelMatrix * vec4(p, 1.0);
@@ -66,7 +92,8 @@ void main() {
 }
 '''
 
-# 3) Explode — desplaza a lo largo de la normal con “ruido” hash
+
+# 3) Explode — desplaza a lo largo de la normal con “ruido” (base 0.25)
 explode_vs = '''
 #version 330 core
 layout (location = 0) in vec3 inPosition;
@@ -88,8 +115,12 @@ float hash31(vec3 p) {
 }
 
 void main() {
-    float n = hash31(inPosition * 3.1 + vec3(time*0.5));
-    float d = mix(0.0, 0.6, clamp(value,0.0,1.0)) * (0.7 + 0.3*sin(time*5.0 + n*6.2831));
+    float baseAmp = 0.25;                           // visible aunque value=0
+    float extra   = 0.55 * clamp(value,0.0,1.0);    // escala adicional por value
+    float speed   = 4.0 + 3.0 * value;
+
+    float n = hash31(inPosition * (2.2 + value*2.0) + vec3(time*0.35));
+    float d = (baseAmp + extra) * (0.6 + 0.4*sin(speed * time + n*6.2831));
     vec3 p = inPosition + inNormals * d;
 
     gl_Position  = projectionMatrix * viewMatrix * modelMatrix * vec4(p, 1.0);
@@ -99,7 +130,8 @@ void main() {
 }
 '''
 
-# 4) Bubble — “infla” hacia una esfera y hace swirl de UV (perfecto con Crystal)
+
+# 4) Bubble — “infla” hacia esfera + swirl de UV (base 35%)
 bubble_vs = '''
 #version 330 core
 layout (location = 0) in vec3 inPosition;
@@ -118,21 +150,24 @@ uniform float value;
 
 void main() {
     float t = clamp(value,0.0,1.0);
-    // “Inflado” hacia esfera mezclando posición con su versión normalizada
     float r = max(0.0001, length(inPosition));
     vec3 sphere = normalize(inPosition) * r;
-    vec3 p = mix(inPosition, sphere, 0.6 * t);     // 0..0.6 de esferización
-    // Ondita suave para parecer membrana de burbuja
-    p += normalize(inPosition) * 0.05 * t * sin(time*2.2 + r*8.0);
 
-    // Swirl sutil de UV alrededor del centro para efectos con texturas
+    // Esferización efectiva: 0.35..0.95
+    float sph = mix(0.35, 0.95, t);
+    vec3 p = mix(inPosition, sphere, sph);
+
+    // Ondulación de membrana base 0.03..0.09
+    float wob = mix(0.03, 0.09, t);
+    p += normalize(inPosition) * wob * sin(time*2.2 + r*8.0);
+
+    // Swirl UV animado
     vec2 uv = inTexCoords;
     vec2 c = vec2(0.5, 0.5);
     vec2 d = uv - c;
-    float ang = (0.8 * t) * exp(-2.5 * length(d)) * sin(time*1.1);
+    float ang = (0.5 + 0.6*t) * exp(-2.0 * length(d)) * sin(time*1.3);
     float ca = cos(ang), sa = sin(ang);
-    vec2 rot = vec2(ca*d.x - sa*d.y, sa*d.x + ca*d.y);
-    vec2 uv2 = c + rot;
+    vec2 uv2 = c + vec2(ca*d.x - sa*d.y, sa*d.x + ca*d.y);
 
     gl_Position  = projectionMatrix * viewMatrix * modelMatrix * vec4(p, 1.0);
     fragPosition = modelMatrix * vec4(p, 1.0);
@@ -141,7 +176,8 @@ void main() {
 }
 '''
 
-# 5) Ripple — ondas circulares en Y según (x,z) + scroll de UV
+
+# 5) Ripple — ondas circulares + scroll UV (base visible)
 ripple_vs = '''
 #version 330 core
 layout (location = 0) in vec3 inPosition;
@@ -163,13 +199,16 @@ void main() {
     vec3 p = inPosition;
 
     float r = length(p.xz);
-    float freq = mix(6.0, 14.0, t);
-    float amp  = mix(0.0, 0.25, t);
-    p.y += amp * sin(r * freq - time * 4.0);
+    // Amplitud base 0.06..0.28, frecuencia 7..16
+    float amp  = 0.06 + 0.22 * t;
+    float freq = 7.0 + 9.0 * t;
+    float spd  = 3.5 + 2.5 * t;
 
-    // scroll de UV en diagonal + ligera distorsión radial
-    vec2 uv = inTexCoords + vec2(time*0.05, time*0.03);
-    uv += normalize(inTexCoords - vec2(0.5)) * 0.03 * sin(time*2.0 + r*5.0) * t;
+    p.y += amp * sin(r * freq - time * spd);
+
+    // UV: scroll y distorsión radial
+    vec2 uv = inTexCoords + vec2(0.03*time, 0.02*time);
+    uv += normalize(inTexCoords - vec2(0.5)) * (0.02 + 0.03*t) * sin(time*2.0 + r*5.0);
 
     gl_Position  = projectionMatrix * viewMatrix * modelMatrix * vec4(p, 1.0);
     fragPosition = modelMatrix * vec4(p, 1.0);
@@ -178,7 +217,8 @@ void main() {
 }
 '''
 
-# 6) Kaleido — “plegado” tipo caleidoscopio sobre los UV
+
+# 6) Kaleido — plegado tipo caleidoscopio en UV (con “breathing”)
 kaleido_vs = '''
 #version 330 core
 layout (location = 0) in vec3 inPosition;
@@ -196,29 +236,25 @@ uniform float time;
 uniform float value;
 
 vec2 kaleido(vec2 uv, float sectors){
-    // Mapea UV al espacio polar en torno a 0.5 y pliega el ángulo
     vec2 c = vec2(0.5);
     vec2 d = uv - c;
-    float a = atan(d.y, d.x);             // -pi..pi
+    float a = atan(d.y, d.x);     // -pi..pi
     float r = length(d);
     float seg = 6.2831853 / max(1.0, sectors);
     float k = mod(a, seg);
-    // espejo en el centro del sector
     float k2 = min(k, seg - k);
-    float ang = k2 - seg*0.25;            // re-centra un poco
+    float ang = k2 - seg*0.25;
     vec2 dir = vec2(cos(ang), sin(ang));
     return c + dir * r;
 }
 
 void main() {
     float t = clamp(value,0.0,1.0);
-    // número de sectores entre 3 y 12
-    float sectors = mix(3.0, 12.0, t*(0.6+0.4*sin(time*0.7)));
+    float sectors = 5.0 + 9.0 * (0.6 + 0.4*sin(time*0.7 + t)); // 5..14 aprox
 
-    // leve “breathing” para dar vida
-    vec3 p = inPosition * (1.0 + 0.05 * sin(time*1.3 + length(inPosition)*3.0)*t);
+    // Breathing suave para dar vida (base 3%)
+    vec3 p = inPosition * (1.0 + (0.03 + 0.04*t) * sin(time*1.1 + length(inPosition)*3.0));
 
-    // UV caleidoscópicos
     vec2 uv = kaleido(inTexCoords, sectors);
 
     gl_Position  = projectionMatrix * viewMatrix * modelMatrix * vec4(p, 1.0);

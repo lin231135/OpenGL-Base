@@ -1,4 +1,4 @@
-# RendererOpenGL2025.py  (no borrar este comentario con el nombre del archivo)
+# RendererOpenGL2025.py
 
 import importlib
 import pygame
@@ -10,7 +10,7 @@ from gl import Renderer
 from buffer import Buffer
 from model import Model
 
-# Shaders NUEVOS
+# Shaders
 from vertexShaders import *
 from fragmentShaders import *
 
@@ -30,18 +30,83 @@ clock = pygame.time.Clock()
 # ---------------- Renderer ----------------
 rend = Renderer(screen)
 rend.pointLight = glm.vec3(1, 1, 1)
+rend.value = 0.85
 
-def set_shaders_safe(vs_src, fs_src, label=""):
+# ---------------- Helpers: estado/ayuda ----------------
+def set_title():
+    pygame.display.set_caption(
+        f"VS={current_vs_name} | FS={current_fs_name} | value={rend.value:.2f}  "
+        f"[H: Ayuda]"
+    )
+
+HELP_TEXT = """
+Controles:
+  R: Reset (modelo normal)
+  F: Alterna Fill/Wireframe
+
+  FRAGMENT SHADERS:
+    1: Rim-Toon
+    2: Gold-Metal
+    3: UV-Ink
+    4: Crystal
+
+  VERTEX SHADERS:
+    5: Twist
+    6: Pulse
+    7: Explode
+    8: Bubble
+    9: Ripple
+    0: Kaleido
+
+  Z / X: Disminuir / Aumentar 'value'
+  Flechas: Mover cámara (X/Z)
+  W A S D Q E: Mover luz (X/Y/Z)
+  R: Volver modelo a default
+"""
+
+def show_help():
+    print(HELP_TEXT)
+    pygame.display.set_caption("Ayuda mostrada en la consola (H para ocultar/volver).")
+
+def set_shaders_safe(vs_src, fs_src):
     try:
         rend.SetShaders(vs_src, fs_src)
-        if label: print(f"[OK] Shaders activos → {label}")
     except Exception as e:
-        print(f"[ERR] Falló compilación de shaders ({label}):\n{e}")
+        # Si hay error de compilación, volvemos a default
+        rend.SetShaders(default_vs, default_fs)
 
-# Shaders iniciales
-currVertexShader   = pulse_vs
-currFragmentShader = rim_toon_fs
-set_shaders_safe(currVertexShader, currFragmentShader, "VS=Pulse | FS=Rim-Toon")
+# --------- Reset a estado “normal” ----------
+def reset_to_default():
+    global currVertexShader, currFragmentShader, current_vs_name, current_fs_name
+    currVertexShader   = default_vs
+    currFragmentShader = default_fs
+    current_vs_name = "Default"
+    current_fs_name = "Default"
+    set_shaders_safe(currVertexShader, currFragmentShader)
+    set_title()
+
+# --------- Diccionarios de mapeo teclas → shaders ---------
+FRAG_MAP = {
+    K_1: ("Rim-Toon",  rim_toon_fs),
+    K_2: ("Gold-Metal", gold_metal_fs),
+    K_3: ("UV-Ink",    uv_debug_fs),
+    K_4: ("Crystal",   crystal_fs),
+    # Si quieres reactivar Pixelate, añade:
+    # K_5: ("Pixelate", pixelate_fs),
+}
+VERT_MAP = {
+    K_5: ("Twist",   twist_vs),
+    K_6: ("Pulse",   pulse_vs),
+    K_7: ("Explode", explode_vs),
+    K_8: ("Bubble",  bubble_vs),
+    K_9: ("Ripple",  ripple_vs),
+    K_0: ("Kaleido", kaleido_vs),
+}
+
+# Shaders iniciales → NORMAL
+current_vs_name = "Default"
+current_fs_name = "Default"
+reset_to_default()
 
 # ---------------- Skybox (opcional) ----------------
 skyboxTextures = [
@@ -60,12 +125,11 @@ model.position = glm.vec3(0.0, -1.5, -4.0)
 model.scale    = glm.vec3(0.25, 0.25, 0.25)
 rend.scene.append(model)
 
-# Utilidades
-def is_key(event, *keys):
-    return event.key in keys
-
 # ---------------- Loop principal ----------------
 isRunning = True
+show_help()
+set_title()
+
 while isRunning:
     deltaTime = clock.tick(60) / 1000.0
     rend.elapsedTime += deltaTime
@@ -75,70 +139,40 @@ while isRunning:
             isRunning = False
 
         elif event.type == KEYDOWN:
-            print("KEYDOWN:", event.key)  # DEBUG
+            # Reset a NORMAL
+            if event.key == K_r:
+                reset_to_default()
+                continue
 
             # Toggle fill/wireframe
             if event.key == K_f:
                 rend.ToggleFilledMode()
-                print("[Info] Toggle Fill/Wireframe")
+                set_title()
+                continue
 
-            # ---------- FRAGMENT SHADERS (1..6) ----------
-            if event.key in (K_1, K_KP1):
-                currFragmentShader = rim_toon_fs
-                rend.SetShaders(currVertexShader, currFragmentShader)
-                print("[OK] Shaders activos → VS=var | FS=Rim-Toon")
+            # Mostrar ayuda
+            if event.key == K_h:
+                show_help()
+                set_title()
+                continue
 
-            elif event.key in (K_2, K_KP2):
-                currFragmentShader = gold_metal_fs
-                rend.SetShaders(currVertexShader, currFragmentShader)
-                print("[OK] Shaders activos → VS=var | FS=Gold-Metal")
-
-            elif event.key in (K_3, K_KP3):
-                currFragmentShader = uv_debug_fs
-                rend.SetShaders(currVertexShader, currFragmentShader)
-                print("[OK] Shaders activos → VS=var | FS=UV-Debug")
-
-            elif event.key in (K_4, K_KP4):
-                currFragmentShader = crystal_fs
-                rend.SetShaders(currVertexShader, currFragmentShader)
-                print("[OK] Shaders activos → VS=var | FS=Crystal")
-
-            elif event.key in (K_5, K_KP5):
-                currFragmentShader = pixelate_fs
-                rend.SetShaders(currVertexShader, currFragmentShader)
-                print("[OK] Shaders activos → VS=var | FS=Pixelate")
+            # ---------- FRAGMENT SHADERS ----------
+            if event.key in FRAG_MAP:
+                name, fs = FRAG_MAP[event.key]
+                current_fs_name = name
+                set_shaders_safe(currVertexShader, fs)
+                currFragmentShader = fs
+                set_title()
+                continue
 
             # ---------- VERTEX SHADERS ----------
-            elif event.key in (K_6, K_KP6):
-                currVertexShader = twist_vs
-                rend.SetShaders(currVertexShader, currFragmentShader)
-                print("[OK] Shaders activos → VS=Twist | FS=var")
-
-            elif event.key in (K_7, K_KP7):
-                currVertexShader = pulse_vs
-                rend.SetShaders(currVertexShader, currFragmentShader)
-                print("[OK] Shaders activos → VS=Pulse | FS=var")
-
-            elif event.key in (K_8, K_KP8):
-                currVertexShader = explode_vs
-                rend.SetShaders(currVertexShader, currFragmentShader)
-                print("[OK] Shaders activos → VS=Explode | FS=var")
-
-            elif event.key in (K_9, K_KP9):
-                currVertexShader = bubble_vs
-                rend.SetShaders(currVertexShader, currFragmentShader)
-                print("[OK] Shaders activos → VS=Bubble | FS=var")
-
-            elif event.key in (K_0, K_KP0):
-                currVertexShader = ripple_vs
-                rend.SetShaders(currVertexShader, currFragmentShader)
-                print("[OK] Shaders activos → VS=Ripple | FS=var")
-
-            elif event.key == K_MINUS:  # Tecla '-'
-                currVertexShader = kaleido_vs
-                rend.SetShaders(currVertexShader, currFragmentShader)
-                print("[OK] Shaders activos → VS=Kaleido | FS=var")
-
+            if event.key in VERT_MAP:
+                name, vs = VERT_MAP[event.key]
+                current_vs_name = name
+                set_shaders_safe(vs, currFragmentShader)
+                currVertexShader = vs
+                set_title()
+                continue
 
     # Cámara
     keys = pygame.key.get_pressed()

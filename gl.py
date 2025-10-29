@@ -43,7 +43,6 @@ class Renderer(object):
         self.skybox.cameraRef = self.camera
 
     def ToggleFilledMode(self):
-        # Alterna entre FILL sin culling y WIREFRAME con culling (útil para depurar)
         self._filled = not self._filled
         if self._filled:
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
@@ -66,14 +65,12 @@ class Renderer(object):
     def Render(self):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-        # Asegura VAO global enlazado
         glBindVertexArray(self.globalVAO)
 
         self.camera.Update()
 
         if self.skybox is not None:
             self.skybox.Render()
-            # ⚠️ IMPORTANTE: re-enlazar el VAO global porque Skybox pudo cambiar el VAO actual
             glBindVertexArray(self.globalVAO)
 
         if self.activeShader is not None:
