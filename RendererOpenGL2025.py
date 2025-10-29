@@ -1,8 +1,6 @@
-# RendererOpenGL2025.py
+# RendererOpenGL2025.py  (no borrar este comentario con el nombre del archivo)
 
 import importlib
-import vertexShaders
-
 import pygame
 import pygame.display
 from pygame.locals import *
@@ -11,11 +9,12 @@ import glm
 from gl import Renderer
 from buffer import Buffer
 from model import Model
+
+# Shaders NUEVOS
 from vertexShaders import *
 from fragmentShaders import *
 
 # ---------------- Inicialización Pygame + OpenGL ----------------
-# En algunas GPUs (especialmente APU AMD) es CRÍTICO setear atributos ANTES del set_mode
 pygame.init()
 pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MAJOR_VERSION, 3)
 pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MINOR_VERSION, 3)
@@ -23,21 +22,28 @@ pygame.display.gl_set_attribute(pygame.GL_CONTEXT_PROFILE_MASK, pygame.GL_CONTEX
 pygame.display.gl_set_attribute(pygame.GL_DOUBLEBUFFER, 1)
 pygame.display.gl_set_attribute(pygame.GL_DEPTH_SIZE, 24)
 
-# ---------------- Configuración de ventana ----------------
-width = 960
-height = 540
+# ---------------- Ventana ----------------
+width, height = 960, 540
 screen = pygame.display.set_mode((width, height), pygame.DOUBLEBUF | pygame.OPENGL)
 clock = pygame.time.Clock()
 
-# ---------------- Renderer principal ----------------
+# ---------------- Renderer ----------------
 rend = Renderer(screen)
 rend.pointLight = glm.vec3(1, 1, 1)
 
-currVertexShader = vertex_shader
-currFragmentShader = fragment_shader
-rend.SetShaders(currVertexShader, currFragmentShader)
+def set_shaders_safe(vs_src, fs_src, label=""):
+    try:
+        rend.SetShaders(vs_src, fs_src)
+        if label: print(f"[OK] Shaders activos → {label}")
+    except Exception as e:
+        print(f"[ERR] Falló compilación de shaders ({label}):\n{e}")
 
-# ---------------- Skybox (opcional; puedes comentarlo si quieres aislar el problema) ----------------
+# Shaders iniciales
+currVertexShader   = pulse_vs
+currFragmentShader = rim_toon_fs
+set_shaders_safe(currVertexShader, currFragmentShader, "VS=Pulse | FS=Rim-Toon")
+
+# ---------------- Skybox (opcional) ----------------
 skyboxTextures = [
     "skybox/right.jpg",
     "skybox/left.jpg",
@@ -49,103 +55,114 @@ skyboxTextures = [
 rend.CreateSkybox(skyboxTextures)
 
 # ---------------- Modelo ----------------
-# Asegúrate que models/pacman.obj tenga:  mtllib pacman.mtl
-# y que pacman.mtl tenga map_Kd apuntando a tus texturas
-pacmanModel = Model("models/tomato.obj")
-pacmanModel.position = glm.vec3(0.0, -1.5, -4.0)
-pacmanModel.scale    = glm.vec3(0.25, 0.25, 0.25)
-# Si sospechas orientación rara:
-# pacmanModel.rotation.y = 90
+model = Model("models/tomato.obj")   # o "models/pacman.obj"
+model.position = glm.vec3(0.0, -1.5, -4.0)
+model.scale    = glm.vec3(0.25, 0.25, 0.25)
+rend.scene.append(model)
 
-rend.scene.append(pacmanModel)
+# Utilidades
+def is_key(event, *keys):
+    return event.key in keys
 
 # ---------------- Loop principal ----------------
 isRunning = True
 while isRunning:
-
     deltaTime = clock.tick(60) / 1000.0
     rend.elapsedTime += deltaTime
 
-    keys = pygame.key.get_pressed()
-
     for event in pygame.event.get():
-        if event.type == pygame.QUIT:
+        if event.type == QUIT:
             isRunning = False
 
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_f:
-                rend.ToggleFilledMode()  # alterna fill/wireframe + culling
+        elif event.type == KEYDOWN:
+            print("KEYDOWN:", event.key)  # DEBUG
 
-            # Cambiar fragment shaders
-            if event.key == pygame.K_1:
-                currFragmentShader = fragment_shader
+            # Toggle fill/wireframe
+            if event.key == K_f:
+                rend.ToggleFilledMode()
+                print("[Info] Toggle Fill/Wireframe")
+
+            # ---------- FRAGMENT SHADERS (1..6) ----------
+            if event.key in (K_1, K_KP1):
+                currFragmentShader = rim_toon_fs
                 rend.SetShaders(currVertexShader, currFragmentShader)
+                print("[OK] Shaders activos → VS=var | FS=Rim-Toon")
 
-            if event.key == pygame.K_2:
-                currFragmentShader = toon_shader
+            elif event.key in (K_2, K_KP2):
+                currFragmentShader = gold_metal_fs
                 rend.SetShaders(currVertexShader, currFragmentShader)
+                print("[OK] Shaders activos → VS=var | FS=Gold-Metal")
 
-            if event.key == pygame.K_3:
-                currFragmentShader = negative_shader
+            elif event.key in (K_3, K_KP3):
+                currFragmentShader = uv_debug_fs
                 rend.SetShaders(currVertexShader, currFragmentShader)
+                print("[OK] Shaders activos → VS=var | FS=UV-Debug")
 
-            if event.key == pygame.K_4:
-                currFragmentShader = magma_shader
+            elif event.key in (K_4, K_KP4):
+                currFragmentShader = crystal_fs
                 rend.SetShaders(currVertexShader, currFragmentShader)
+                print("[OK] Shaders activos → VS=var | FS=Crystal")
 
-            # Cambiar vertex shaders
-            if event.key == pygame.K_7:
-                currVertexShader = vertex_shader
+            elif event.key in (K_5, K_KP5):
+                currFragmentShader = pixelate_fs
                 rend.SetShaders(currVertexShader, currFragmentShader)
+                print("[OK] Shaders activos → VS=var | FS=Pixelate")
 
-            if event.key == pygame.K_8:
-                currVertexShader = fat_shader
+            # ---------- VERTEX SHADERS ----------
+            elif event.key in (K_6, K_KP6):
+                currVertexShader = twist_vs
                 rend.SetShaders(currVertexShader, currFragmentShader)
+                print("[OK] Shaders activos → VS=Twist | FS=var")
 
-            if event.key == pygame.K_9:
-                currVertexShader = melt_shader
+            elif event.key in (K_7, K_KP7):
+                currVertexShader = pulse_vs
                 rend.SetShaders(currVertexShader, currFragmentShader)
+                print("[OK] Shaders activos → VS=Pulse | FS=var")
 
-            if event.key == pygame.K_0:
-                importlib.reload(vertexShaders)
-                currVertexShader = vertexShaders.earth_shader
+            elif event.key in (K_8, K_KP8):
+                currVertexShader = explode_vs
                 rend.SetShaders(currVertexShader, currFragmentShader)
-                print("Shader Tierra recargado y activado")
+                print("[OK] Shaders activos → VS=Explode | FS=var")
 
-    # ---------------- Movimiento cámara ----------------
-    if keys[K_UP]:
-        rend.camera.position.z += 2.0 * deltaTime
-    if keys[K_DOWN]:
-        rend.camera.position.z -= 2.0 * deltaTime
-    if keys[K_RIGHT]:
-        rend.camera.position.x += 2.0 * deltaTime
-    if keys[K_LEFT]:
-        rend.camera.position.x -= 2.0 * deltaTime
+            elif event.key in (K_9, K_KP9):
+                currVertexShader = bubble_vs
+                rend.SetShaders(currVertexShader, currFragmentShader)
+                print("[OK] Shaders activos → VS=Bubble | FS=var")
 
-    # ---------------- Movimiento luz ----------------
-    if keys[K_w]:
-        rend.pointLight.z -= 10 * deltaTime
-    if keys[K_s]:
-        rend.pointLight.z += 10 * deltaTime
-    if keys[K_a]:
-        rend.pointLight.x -= 10 * deltaTime
-    if keys[K_d]:
-        rend.pointLight.x += 10 * deltaTime
-    if keys[K_q]:
-        rend.pointLight.y -= 10 * deltaTime
-    if keys[K_e]:
-        rend.pointLight.y += 10 * deltaTime
+            elif event.key in (K_0, K_KP0):
+                currVertexShader = ripple_vs
+                rend.SetShaders(currVertexShader, currFragmentShader)
+                print("[OK] Shaders activos → VS=Ripple | FS=var")
 
-    # ---------------- Uniformes útiles ----------------
-    if keys[K_z]:
-        rend.value = max(0.0, rend.value - 1.0 * deltaTime)
-    if keys[K_x]:
-        rend.value = min(1.0, rend.value + 1.0 * deltaTime)
+            elif event.key == K_MINUS:  # Tecla '-'
+                currVertexShader = kaleido_vs
+                rend.SetShaders(currVertexShader, currFragmentShader)
+                print("[OK] Shaders activos → VS=Kaleido | FS=var")
 
-    # ---------------- Animación simple ----------------
-    pacmanModel.rotation.y += 45.0 * deltaTime
 
-    # ---------------- Render ----------------
+    # Cámara
+    keys = pygame.key.get_pressed()
+    spd = 2.0 * deltaTime
+    if keys[K_UP]:    rend.camera.position.z += spd
+    if keys[K_DOWN]:  rend.camera.position.z -= spd
+    if keys[K_RIGHT]: rend.camera.position.x += spd
+    if keys[K_LEFT]:  rend.camera.position.x -= spd
+
+    # Luz
+    lspd = 10.0 * deltaTime
+    if keys[K_w]: rend.pointLight.z -= lspd
+    if keys[K_s]: rend.pointLight.z += lspd
+    if keys[K_a]: rend.pointLight.x -= lspd
+    if keys[K_d]: rend.pointLight.x += lspd
+    if keys[K_q]: rend.pointLight.y -= lspd
+    if keys[K_e]: rend.pointLight.y += lspd
+
+    # Control 'value'
+    if keys[K_z]: rend.value = max(0.0, rend.value - 1.0 * deltaTime)
+    if keys[K_x]: rend.value = min(1.0, rend.value + 1.0 * deltaTime)
+
+    model.rotation.y += 45.0 * deltaTime
+
     rend.Render()
     pygame.display.flip()
 
